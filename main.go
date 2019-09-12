@@ -9,9 +9,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Luzifer/rconfig"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/Luzifer/rconfig/v2"
 )
 
 var (
@@ -28,6 +29,7 @@ var (
 )
 
 func init() {
+	rconfig.AutoEnv(true)
 	if err := rconfig.ParseAndValidate(&cfg); err != nil {
 		log.Fatalf("Unable to parse commandline options: %s", err)
 	}
