@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"regexp"
@@ -23,6 +24,7 @@ var (
 		Timezone       string   `flag:"timezone,t" default:"" description:"Set timezone in Dockerfile (format 'Europe/Berlin')"`
 		VersionAndExit bool     `flag:"version" default:"false" description:"Prints current version and exits"`
 		Volumes        []string `flag:"volume,v" default:"" description:"Volumes to create mount points for (format '/data')"`
+		Write          bool     `flag:"write,w" default:"false" description:"Directly write into Dockerfile"`
 	}{}
 
 	version = "dev"
@@ -86,7 +88,17 @@ func main() {
 		log.WithError(err).Fatalf("Could not render template %q", tplPath)
 	}
 
-	fmt.Println(strings.TrimSpace(regexp.MustCompile(`\n{3,}`).ReplaceAllString(buf.String(), "\n\n")))
+	var output io.Writer = os.Stdout
+	if cfg.Write {
+		f, err := os.Create("Dockerfile")
+		if err != nil {
+			log.WithError(err).Fatal("Could not open Dockerfile for writing")
+		}
+		defer f.Close()
+		output = f
+	}
+
+	fmt.Fprintln(output, strings.TrimSpace(regexp.MustCompile(`\n{3,}`).ReplaceAllString(buf.String(), "\n\n")))
 }
 
 func getPackage() (string, error) {
