@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 	"text/template"
 
+	"github.com/fatih/color"
 	homedir "github.com/mitchellh/go-homedir"
+	diff "github.com/sergi/go-diff/diffmatchpatch"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Luzifer/rconfig/v2"
@@ -18,6 +21,7 @@ import (
 
 var (
 	cfg = struct {
+		Diff           bool     `flag:"diff" default:"false" description:"Show a diff to existing Dockerfile"`
 		ExposedPorts   []string `flag:"expose,e" default:"" description:"Ports to expose (format '8000' or '8000/tcp')"`
 		LogLevel       string   `flag:"log-level" default:"info" description:"Log level (debug, info, warn, error, fatal)"`
 		TemplateFile   string   `flag:"template-file" default:"~/.config/gen-dockerfile.tpl" description:"Template to use for generating the docker file"`
@@ -89,6 +93,11 @@ func main() {
 	}
 
 	var output io.Writer = os.Stdout
+	if cfg.Diff {
+		displayDiff(buf)
+		output = ioutil.Discard
+	}
+
 	if cfg.Write {
 		f, err := os.Create("Dockerfile")
 		if err != nil {
@@ -99,6 +108,58 @@ func main() {
 	}
 
 	fmt.Fprintln(output, strings.TrimSpace(regexp.MustCompile(`\n{3,}`).ReplaceAllString(buf.String(), "\n\n")))
+}
+
+func displayDiff(buf *bytes.Buffer) {
+	var (
+		lenOldDockerfile int
+		oldDockerfile    []byte
+		oldName          = "/dev/null"
+	)
+
+	if _, err := os.Stat("Dockerfile"); err == nil {
+		oldDockerfile, err = ioutil.ReadFile("Dockerfile")
+		if err != nil {
+			log.WithError(err).Fatal("Could not read existing Dockerfile")
+		}
+		lenOldDockerfile = len(bytes.Split(oldDockerfile, []byte{'\n'}))
+		oldName = "a/Dockerfile"
+	}
+
+	differ := diff.New()
+	wSrc, wDst, warray := differ.DiffLinesToRunes(string(oldDockerfile), regexp.MustCompile(`\n{3,}`).ReplaceAllString(buf.String(), "\n\n"))
+	diffs := differ.DiffMainRunes(wSrc, wDst, false)
+	diffs = differ.DiffCharsToLines(diffs, warray)
+
+	if len(diffs) == 1 && diffs[0].Type == diff.DiffEqual {
+		// No diff, everything equal: Nothing to display
+		return
+	}
+
+	fmt.Printf("--- %s\n", oldName)
+	fmt.Println("+++ b/Dockerfile")
+	color.Cyan("@@ -0,%d +0,%d @@",
+		lenOldDockerfile,
+		len(strings.Split(differ.DiffText2(diffs), "\n")),
+	)
+
+	for _, d := range diffs {
+		var text = d.Text
+		if text[len(text)-1] == '\n' {
+			text = text[:len(text)-1]
+		}
+
+		for _, l := range strings.Split(text, "\n") {
+			switch d.Type {
+			case diff.DiffInsert:
+				color.Green("+ %s\n", l)
+			case diff.DiffDelete:
+				color.Red("- %s\n", l)
+			case diff.DiffEqual:
+				fmt.Printf("  %s\n", l)
+			}
+		}
+	}
 }
 
 func getPackage() (string, error) {
