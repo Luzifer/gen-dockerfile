@@ -1,3 +1,7 @@
+# 0.3.0 / 2020-09-07
+
+  * Add customizable feature-flags to enable switches in template
+
 # 0.2.0 / 2019-09-12
 
   * Add diff parameter to show diff of changes
