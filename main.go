@@ -16,6 +16,7 @@ import (
 	diff "github.com/sergi/go-diff/diffmatchpatch"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/Luzifer/go_helpers/v2/str"
 	"github.com/Luzifer/rconfig/v2"
 )
 
@@ -23,6 +24,7 @@ var (
 	cfg = struct {
 		Diff           bool     `flag:"diff" default:"false" description:"Show a diff to existing Dockerfile"`
 		ExposedPorts   []string `flag:"expose,e" default:"" description:"Ports to expose (format '8000' or '8000/tcp')"`
+		Feature        []string `flag:"feature,f" default:"" description:"Enable feature defined in template"`
 		LogLevel       string   `flag:"log-level" default:"info" description:"Log level (debug, info, warn, error, fatal)"`
 		TemplateFile   string   `flag:"template-file" default:"~/.config/gen-dockerfile.tpl" description:"Template to use for generating the docker file"`
 		Timezone       string   `flag:"timezone,t" default:"" description:"Set timezone in Dockerfile (format 'Europe/Berlin')"`
@@ -82,7 +84,7 @@ func main() {
 		log.WithError(err).Fatal("Could not find users homedir")
 	}
 
-	tpl, err := template.New("gen-dockerfile.tpl").ParseFiles(tplPath)
+	tpl, err := template.New("gen-dockerfile.tpl").Funcs(templateFuncs()).ParseFiles(tplPath)
 	if err != nil {
 		log.WithError(err).Fatalf("Could not parse template %q", tplPath)
 	}
@@ -144,7 +146,7 @@ func displayDiff(buf *bytes.Buffer) {
 	)
 
 	for _, d := range diffs {
-		var text = d.Text
+		text := d.Text
 		if text[len(text)-1] == '\n' {
 			text = text[:len(text)-1]
 		}
@@ -194,4 +196,10 @@ func deleteEmpty(s []string) []string {
 		}
 	}
 	return r
+}
+
+func templateFuncs() template.FuncMap {
+	return map[string]interface{}{
+		"hasFeature": func(name string, v ...string) bool { return str.StringInSlice(name, cfg.Feature) },
+	}
 }
