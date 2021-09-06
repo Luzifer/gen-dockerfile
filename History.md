@@ -1,3 +1,7 @@
+# 0.4.0 / 2021-09-06
+
+  * Allow setting custom variables
+
 # 0.3.0 / 2020-09-07
 
   * Add customizable feature-flags to enable switches in template

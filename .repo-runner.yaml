@@ -7,5 +7,6 @@ commands:
   - make publish
 
 environment:
+  DRAFT: "false"
   CGO_ENABLED: 0
   MOD_MODE: readonly
