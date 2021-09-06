@@ -16,6 +16,7 @@ import (
 	diff "github.com/sergi/go-diff/diffmatchpatch"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/Luzifer/go_helpers/v2/env"
 	"github.com/Luzifer/go_helpers/v2/str"
 	"github.com/Luzifer/rconfig/v2"
 )
@@ -28,6 +29,7 @@ var (
 		LogLevel       string   `flag:"log-level" default:"info" description:"Log level (debug, info, warn, error, fatal)"`
 		TemplateFile   string   `flag:"template-file" default:"~/.config/gen-dockerfile.tpl" description:"Template to use for generating the docker file"`
 		Timezone       string   `flag:"timezone,t" default:"" description:"Set timezone in Dockerfile (format 'Europe/Berlin')"`
+		Variables      []string `flag:"var" description:"Set variables to use in template (format key=value)"`
 		VersionAndExit bool     `flag:"version" default:"false" description:"Prints current version and exits"`
 		Volumes        []string `flag:"volume,v" default:"" description:"Volumes to create mount points for (format '/data')"`
 		Write          bool     `flag:"write,w" default:"false" description:"Directly write into Dockerfile"`
@@ -77,6 +79,13 @@ func main() {
 		"package":  pkg,
 		"timezone": cfg.Timezone,
 		"volumes":  `"` + strings.Join(cfg.Volumes, `", "`) + `"`,
+	}
+
+	for k, v := range env.ListToMap(cfg.Variables) {
+		if _, ok := params[k]; ok {
+			log.WithField("variable", k).Fatal("Overwriting variables is not supported")
+		}
+		params[k] = v
 	}
 
 	tplPath, err := homedir.Expand(cfg.TemplateFile)
