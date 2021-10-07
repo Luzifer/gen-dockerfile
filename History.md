@@ -1,3 +1,7 @@
+# 0.5.0 / 2021-10-07
+
+  * Add korvike functions to templating
+
 # 0.4.0 / 2021-09-06
 
   * Allow setting custom variables
