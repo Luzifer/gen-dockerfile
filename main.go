@@ -18,6 +18,7 @@ import (
 
 	"github.com/Luzifer/go_helpers/v2/env"
 	"github.com/Luzifer/go_helpers/v2/str"
+	"github.com/Luzifer/korvike/functions"
 	"github.com/Luzifer/rconfig/v2"
 )
 
@@ -208,7 +209,7 @@ func deleteEmpty(s []string) []string {
 }
 
 func templateFuncs() template.FuncMap {
-	return map[string]interface{}{
-		"hasFeature": func(name string, v ...string) bool { return str.StringInSlice(name, cfg.Feature) },
-	}
+	funcMap := functions.GetFunctionMap()
+	funcMap["hasFeature"] = func(name string) bool { return str.StringInSlice(name, cfg.Feature) }
+	return funcMap
 }
