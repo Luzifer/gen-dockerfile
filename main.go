@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -107,7 +106,7 @@ func main() {
 	var output io.Writer = os.Stdout
 	if cfg.Diff {
 		displayDiff(buf)
-		output = ioutil.Discard
+		output = io.Discard
 	}
 
 	if cfg.Write {
@@ -130,7 +129,7 @@ func displayDiff(buf *bytes.Buffer) {
 	)
 
 	if _, err := os.Stat("Dockerfile"); err == nil {
-		oldDockerfile, err = ioutil.ReadFile("Dockerfile")
+		oldDockerfile, err = os.ReadFile("Dockerfile")
 		if err != nil {
 			log.WithError(err).Fatal("Could not read existing Dockerfile")
 		}
