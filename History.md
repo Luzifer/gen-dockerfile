@@ -1,3 +1,8 @@
+# 0.5.1 / 2024-12-12
+
+  * Update Go dependencies
+  * CI: Replace CI environment
+
 # 0.5.0 / 2021-10-07
 
   * Add korvike functions to templating
